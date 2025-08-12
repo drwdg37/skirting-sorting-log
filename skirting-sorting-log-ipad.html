@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Skirting Sorting Log</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --muted: #9ca3af;
+      --text: #e5e7eb;
+      --accent: #22d3ee;
+      --accent-2: #a78bfa;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+      --danger: #ef4444;
+    }
+    html, body { height: 100%; }
+    body {
+      margin: 0; background: linear-gradient(180deg, #0b1220, #0f172a 40%); color: var(--text);
+      font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji;
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: clamp(16px, 3vw, 28px); }
+    header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom: 14px; }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .logo { width: 40px; height: 40px; border-radius: 10px; background: radial-gradient(circle at 30% 30%, #22d3ee, #1d4ed8); box-shadow: var(--shadow); }
+    h1 { font-size: clamp(20px, 5vw, 28px); margin:0; letter-spacing:.3px; }
+    .card { background: rgba(17,24,39,.75); border: 1px solid rgba(255,255,255,.06); border-radius: var(--radius); box-shadow: var(--shadow); padding: clamp(14px, 3vw, 22px); }
+
+    .grid-2 { display:grid; grid-template-columns: 1fr; gap: 16px; }
+    @media (min-width: 980px){ .grid-2 { grid-template-columns: 1.2fr .8fr; } }
+
+    label { display:block; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; }
+    input[type="text"], select { width: 100%; padding: 14px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background:#0b1020; color: var(--text); outline: none; }
+    input::placeholder { color: #64748b; }
+
+    .row { display:flex; gap: 12px; align-items:center; flex-wrap: wrap; }
+    .btn { appearance:none; border:0; padding: 14px 18px; border-radius: 12px; font-weight:700; letter-spacing:.3px; color:#0b1020; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: var(--shadow); cursor:pointer; }
+    .btn.secondary { background: #0b1020; color: var(--text); border: 1px solid rgba(255,255,255,.12); }
+    .btn.danger { background: linear-gradient(135deg, #f87171, var(--danger)); color:#0b1020; }
+    .btn:active { transform: translateY(1px); }
+
+    .section-title { font-weight:800; letter-spacing:.6px; margin:2px 0 10px; text-transform:uppercase; font-size:14px; color:#cbd5e1; }
+
+    .choices { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+    .choices.smallCols { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .chip { user-select:none; -webkit-user-select:none; padding: 16px 10px; border-radius: 14px; border: 2px solid rgba(255,255,255,.25); background: #0b1020; color: #e5e7eb; cursor:pointer; font-weight:800; text-align:center; box-shadow: var(--shadow); line-height:1.1; }
+    .chip .top { display:block; font-size:14px; opacity:.9; }
+    .chip .bottom { display:block; font-size:18px; margin-top:2px; opacity:.95; }
+    .chip.single { padding: 16px; font-size:16px; }
+    .chip.sel-selected { background: linear-gradient(135deg, rgba(34,211,238,.18), rgba(167,139,250,.18)); border-color: rgba(34,211,238,.8); }
+    .chip.reason { background: #7f1d1d; border-color: #ef4444; color: #fff; }
+    .chip.reason.reason-selected { outline: 2px solid #fff; }
+
+    table { width:100%; border-collapse: collapse; }
+    th, td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,.08); text-align:left; font-size: 15px; }
+    th { color:#cbd5e1; font-weight:700; }
+    tbody tr:hover { background: rgba(255,255,255,.03); }
+
+    .hint { color: var(--muted); font-size: 13px; }
+
+    /* Compatibility tip banner (hidden when JS populates buttons) */
+    .tip {
+      display:none; margin: 10px 0 0; padding: 10px 12px;
+      border-radius: 12px; background: #7c2d12; border: 1px solid rgba(255,255,255,.15); color: #fde68a;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <h1>Skirting Sorting Log</h1>
+      </div>
+      <div class="row">
+        <button id="exportBtn" class="btn secondary" title="Download CSV of all entries">Export CSV</button>
+      </div>
+    </header>
+
+    <section class="card" aria-labelledby="formTitle">
+      <h2 id="formTitle" style="margin-top:0">New Entry</h2>
+      <div class="row" style="margin-bottom:12px">
+        <div style="min-width:180px; flex:1">
+          <label for="packer">Packer</label>
+          <select id="packer">
+            <option value="" hidden>Select Packer</option>
+            <option>PHA</option>
+            <option>Tyson</option>
+            <option>TexPac</option>
+            <option>Mixed</option>
+          </select>
+        </div>
+        <div style="min-width:140px; width:200px">
+          <label for="lot">Lot Number (3 digits)</label>
+          <input id="lot" type="text" inputmode="numeric" maxlength="3" placeholder="e.g., 105" />
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="section-title">Selection</div>
+          <div id="selectionChoices" class="choices"></div>
+          <div class="hint" style="margin-top:6px">Select one selection to enable Submit.</div>
+        </div>
+        <div>
+          <div class="section-title">Reason (optional)</div>
+          <div id="reasonChoices" class="choices smallCols"></div>
+        </div>
+      </div>
+
+      <div id="compatTip" class="tip">If you don't see any buttons above: open this file in <b>Safari</b> (not the Files preview). In Files: long‑press the file → <b>Share</b> → <b>Open in Safari</b>. Then Add to Home Screen.</div>
+
+      <div class="row" style="margin-top:16px">
+        <button id="submitBtn" class="btn">Submit</button>
+        <button id="undoBtn" class="btn secondary" title="Remove most recent entry">Undo last</button>
+        <button id="clearBtn" class="btn danger" title="Delete ALL entries">Delete all</button>
+      </div>
+      <p class="hint" style="margin-top:8px">Submit keeps Packer & Lot for faster repeat logging; clears Selection and Reason.</p>
+    </section>
+
+    <section class="card" style="margin-top:16px" aria-labelledby="logTitle">
+      <h2 id="logTitle" style="margin-top:0">Log</h2>
+      <div style="overflow:auto">
+        <table id="table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Packer</th>
+              <th>Lot Number</th>
+              <th>Selection</th>
+              <th>Reason</th>
+              <th>Timestamp</th>
+              <th>Weight</th>
+              <th>Grade</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+<script>
+(function(){
+  const LS_KEY = 'skirtingSortingLog_v4';
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+  const packerEl = $('#packer');
+  const lotEl = $('#lot');
+  const selectionGroup = $('#selectionChoices');
+  const reasonGroup = $('#reasonChoices');
+  const tableBody = $('#table tbody');
+  const submitBtn = $('#submitBtn');
+  const exportBtn = $('#exportBtn');
+  const clearBtn = $('#clearBtn');
+  const undoBtn = $('#undoBtn');
+  const compatTip = $('#compatTip');
+
+  // Show compatibility tip if buttons don't populate shortly
+  setTimeout(()=>{
+    if(selectionGroup.children.length === 0 || reasonGroup.children.length === 0){
+      compatTip.style.display = 'block';
+    }
+  }, 800);
+
+  // Build Selection buttons (19 total)
+  const selectionDefs = [
+    ['Ex Hvy','1'], ['Ex Hvy','2'], ['Ex Hvy','3'], ['Ex Hvy','4'],
+    ['Heavy','1'],  ['Heavy','2'],  ['Heavy','3'],  ['Heavy','4'],
+    ['Med','1'],    ['Med','2'],    ['Med','3'],    ['Med','4'],
+    ['Light','1'],  ['Light','2'],  ['Light','3'],  ['Light','4'],
+    ['Mose Heavy',''], ['Mose Medium',''], ['3X','']
+  ];
+
+  selectionDefs.forEach(([w,g])=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip';
+    btn.dataset.weight = w;
+    btn.dataset.grade = g;
+    btn.dataset.selection = g ? `${w} ${g}` : w;
+    if(g){
+      btn.innerHTML = `<span class="top">${escapeHtml(w)}</span><span class="bottom">${escapeHtml(g)}</span>`;
+    } else {
+      btn.classList.add('single');
+      btn.textContent = w;
+    }
+    selectionGroup.appendChild(btn);
+  });
+
+  // Build Reason buttons
+  const reasons = ['Purple Stain','Fat Wrinkle','Heavy Draw','Scud','Mach Dmg','Folds','White Streak','Puller Dmg','Butch Cut','Insect Dmg','Kidney Grease'];
+  reasons.forEach(txt=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip reason single';
+    btn.dataset.value = txt;
+    btn.textContent = txt;
+    reasonGroup.appendChild(btn);
+  });
+
+  // Selection: single-select using its own class
+  selectionGroup.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.chip');
+    if(!btn) return;
+    $$('.chip', selectionGroup).forEach(b=>b.classList.remove('sel-selected'));
+    btn.classList.add('sel-selected');
+  });
+
+  // Reason: zero-or-one select using its own class
+  reasonGroup.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.chip.reason');
+    if(!btn) return;
+    if(btn.classList.contains('reason-selected')){
+      btn.classList.remove('reason-selected');
+    } else {
+      $$('.chip.reason', reasonGroup).forEach(b=>b.classList.remove('reason-selected'));
+      btn.classList.add('reason-selected');
+    }
+  });
+
+  function getSelectedSelection(){ return selectionGroup.querySelector('.chip.sel-selected'); }
+  function getSelectedReason(){ const el = reasonGroup.querySelector('.chip.reason.reason-selected'); return el ? el.dataset.value : ''; }
+
+  function readLog(){ try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; } }
+  function writeLog(data){ localStorage.setItem(LS_KEY, JSON.stringify(data)); }
+
+  function renderTable(){
+    const data = readLog();
+    tableBody.innerHTML = data.map((row, idx)=>{
+      return `<tr>
+        <td>${idx+1}</td>
+        <td>${escapeHtml(row.packer)}</td>
+        <td>${escapeHtml(row.lot)}</td>
+        <td>${escapeHtml(row.selection)}</td>
+        <td>${escapeHtml(row.reason)}</td>
+        <td>${fmtDateTime(row.ts)}</td>
+        <td>${escapeHtml(row.weight)}</td>
+        <td>${escapeHtml(row.grade)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function fmtDateTime(iso){ try { return new Date(iso).toLocaleString(); } catch { return iso; } }
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
+
+  // Load saved data on start
+  renderTable();
+  try {
+    const pref = JSON.parse(localStorage.getItem(LS_KEY + '_prefs')||'{}');
+    if(pref.packer) packerEl.value = pref.packer;
+    if(pref.lot) lotEl.value = pref.lot;
+  } catch {}
+
+  submitBtn.addEventListener('click', ()=>{
+    const packer = packerEl.value.trim();
+    const lot = lotEl.value.trim();
+    const selBtn = getSelectedSelection();
+    const reason = getSelectedReason();
+
+    if(!packer){ alert('Please choose a Packer.'); return; }
+    if(!/^\d{3}$/.test(lot)){ alert('Lot Number must be exactly 3 digits (e.g., 105).'); return; }
+    if(!selBtn){ alert('Please choose one Selection.'); return; }
+
+    const entry = {
+      packer,
+      lot,
+      selection: selBtn.dataset.selection,
+      reason,
+      ts: new Date().toISOString(),
+      weight: selBtn.dataset.grade ? selBtn.dataset.weight : selBtn.dataset.selection,
+      grade: selBtn.dataset.grade || ''
+    };
+
+    const data = readLog(); data.push(entry); writeLog(data);
+    localStorage.setItem(LS_KEY + '_prefs', JSON.stringify({ packer, lot }));
+
+    // Reset highlights after submit
+    $$('.chip', selectionGroup).forEach(b=>b.classList.remove('sel-selected'));
+    $$('.chip.reason', reasonGroup).forEach(b=>b.classList.remove('reason-selected'));
+
+    renderTable();
+  });
+
+  undoBtn.addEventListener('click', ()=>{
+    const data = readLog(); if(!data.length){ alert('No entries to undo.'); return; }
+    data.pop(); writeLog(data); renderTable();
+  });
+
+  clearBtn.addEventListener('click', ()=>{
+    if(confirm('Delete ALL entries? This cannot be undone.')){ writeLog([]); renderTable(); }
+  });
+
+  exportBtn.addEventListener('click', ()=>{
+    const data = readLog();
+    const header = ['Packer','Lot Number','Selection','Reason','Timestamp','Weight','Grade'];
+    const rows = data.map(r=> [r.packer, r.lot, r.selection, r.reason, r.ts, r.weight, r.grade]);
+    const csv = [header].concat(rows).map(cols => cols.map(v => csvEscape(v)).join(',')).join('\n');
+    const blob = new Blob([csv], {type: 'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const today = new Date().toISOString().slice(0,10);
+    a.href = url; a.download = `skirting-sorting-log-${today}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  function csvEscape(val){ const s = String(val == null ? '' : val); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+})();
+</script>
+</body>
+</html>
