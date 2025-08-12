@@ -1,8 +1,8 @@
-// Cache version v7
-const CACHE = 'skirting-log-v7';
+// Cache version v8
+const CACHE = 'skirting-log-v8';
 const ASSETS = [
   './',
-  './index.html?v=7',
+  './index.html?v=8',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -25,7 +25,7 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   const url = new URL(req.url);
   if (req.mode === 'navigate') {
-    event.respondWith(caches.match('./index.html?v=7').then(resp => resp || fetch('./index.html?v=7')));
+    event.respondWith(caches.match('./index.html?v=8').then(resp => resp || fetch('./index.html?v=8')));
     return;
   }
   event.respondWith(
@@ -38,7 +38,7 @@ self.addEventListener('fetch', event => {
           }
         } catch(e){}
         return res;
-      }).catch(() => caches.match('./index.html?v=7'))
+      }).catch(() => caches.match('./index.html?v=8'))
     })
   );
 });

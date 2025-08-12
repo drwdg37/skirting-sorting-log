@@ -1,73 +1,336 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Skirting Sorting Log</title>
-<style>
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#0f172a;color:#e5e7eb;margin:0}
-.wrap{max-width:1100px;margin:0 auto;padding:20px}
-.grid-3{display:grid;grid-template-columns:150px minmax(180px,1fr) 220px;gap:16px}
-.grid-3>div{min-width:0}
-@media (max-width:900px){.grid-3{grid-template-columns:1fr 1fr}.grid-3>div:nth-child(3){grid-column:span 2}}
-@media (max-width:600px){.grid-3{grid-template-columns:1fr}.grid-3>div:nth-child(3){grid-column:auto}}
-input,select{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#0b1020;color:#e5e7eb;box-sizing:border-box}
-.choices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.choices.smallCols{grid-template-columns:repeat(2,minmax(0,1fr))}
-.chip{padding:16px 10px;border-radius:14px;border:2px solid rgba(255,255,255,.25);background:#0b1020;color:#e5e7eb;font-weight:800;text-align:center;cursor:pointer}
-.chip.sel-selected{background:linear-gradient(135deg,rgba(34,211,238,.18),rgba(167,139,250,.18));border-color:rgba(34,211,238,.8)}
-.chip.reason-selected{background:linear-gradient(135deg,rgba(239,68,68,.22),rgba(239,68,68,.10));border-color:rgba(239,68,68,.85)}
-.btn{padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#0b1020;color:#e5e7eb}
-</style>
-</head><body>
-<div class="wrap">
-  <div class="grid-3" style="margin-bottom:12px">
-    <div><label for="packer">Packer</label><select id="packer"><option hidden value="">Select</option><option>PHA</option><option>Tyson</option><option>TexPac</option><option>Mixed</option></select></div>
-    <div><label for="sortedBy">Sorted By</label><input id="sortedBy" type="text" placeholder="Name"/></div>
-    <div><label for="lot">Lot Number</label><input id="lot" type="text" maxlength="6" inputmode="numeric" pattern="[0-9A-Za-z]*" placeholder="e.g., 105 or 105CS"/></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Skirting Sorting Log — v8</title>
+  <style>
+    :root {
+      --bg: #0f172a; --panel: #111827; --muted: #9ca3af; --text: #e5e7eb;
+      --accent: #22d3ee; --accent-2: #a78bfa; --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px; --danger: #ef4444;
+    }
+    html, body { height: 100%; }
+    * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #0b1220, #0f172a 40%);
+      color: var(--text);
+      font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: clamp(16px, 3vw, 28px); }
+    header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom: 14px; }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .logo { width: 40px; height: 40px; border-radius: 10px; background: radial-gradient(circle at 30% 30%, #22d3ee, #1d4ed8); box-shadow: var(--shadow); }
+    h1 { font-size: clamp(20px, 5vw, 28px); margin:0; letter-spacing:.3px; }
+    .card { background: rgba(17,24,39,.75); border: 1px solid rgba(255,255,255,.06); border-radius: var(--radius); box-shadow: var(--shadow); padding: clamp(14px, 3vw, 22px); }
+
+    /* Top inputs — responsive & safe on iPad */
+    .grid-3 { display:grid; grid-template-columns: 150px minmax(180px, 1fr) 220px; gap: 16px; }
+    .grid-3 > div { min-width: 0; }
+    @media (max-width: 900px){
+      .grid-3 { grid-template-columns: 1fr 1fr; }
+      .grid-3 > div:nth-child(3){ grid-column: span 2; } /* Lot moves to its own row */
+    }
+    @media (max-width: 600px){
+      .grid-3 { grid-template-columns: 1fr; }
+      .grid-3 > div:nth-child(3){ grid-column: auto; }
+    }
+
+    label { display:block; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; }
+    input[type="text"], select {
+      width: 100%; padding: 14px 12px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.12); background:#0b1020; color: var(--text); outline: none;
+    }
+    input::placeholder { color: #64748b; }
+
+    .row { display:flex; gap: 12px; align-items:center; flex-wrap: wrap; }
+    .btn { appearance:none; border:0; padding: 12px 16px; border-radius: 12px; font-weight:700;
+      letter-spacing:.3px; color:#0b1020; background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: var(--shadow); cursor:pointer; }
+    .btn.secondary { background: #0b1020; color: var(--text); border: 1px solid rgba(255,255,255,.12); }
+    .btn.danger { background: linear-gradient(135deg, #f87171, var(--danger)); color:#0b1020; }
+    .btn:active { transform: translateY(1px); }
+
+    .section-title { font-weight:800; letter-spacing:.6px; margin:2px 0 10px; text-transform:uppercase; font-size:14px; color:#cbd5e1; }
+
+    .choices { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+    .choices.smallCols { grid-template-columns: repeat(2, minmax(0,1fr)); }
+
+    .chip { user-select:none; -webkit-user-select:none; padding: 16px 10px; border-radius: 14px;
+      border: 2px solid rgba(255,255,255,.25); background: #0b1020; color: #e5e7eb; cursor:pointer; font-weight:800;
+      text-align:center; box-shadow: var(--shadow); line-height:1.1; }
+    .chip .top { display:block; font-size:14px; opacity:.9; }
+    .chip .bottom { display:block; font-size:18px; margin-top:2px; opacity:.95; }
+    .chip.single { padding: 16px; font-size:16px; }
+
+    .chip.sel-selected { background: linear-gradient(135deg, rgba(34,211,238,.18), rgba(167,139,250,.18)); border-color: rgba(34,211,238,.8); }
+    .chip.reason-selected { background: linear-gradient(135deg, rgba(239,68,68,.22), rgba(239,68,68,.10)); border-color: rgba(239,68,68,.85); }
+
+    table { width:100%; border-collapse: collapse; }
+    th, td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,.08); text-align:left; font-size: 15px; }
+    th { color:#cbd5e1; font-weight:700; }
+    tbody tr:hover { background: rgba(255,255,255,.03); }
+
+    .hint { color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <h1>Skirting Sorting Log</h1>
+      </div>
+      <div class="row">
+        <button id="exportBtn" class="btn secondary" title="Download CSV of all entries">Export CSV</button>
+      </div>
+    </header>
+
+    <section class="card">
+      <div class="grid-3" style="margin-bottom:12px">
+        <div>
+          <label for="packer">Packer</label>
+          <select id="packer">
+            <option value="" hidden>Select</option>
+            <option>PHA</option>
+            <option>Tyson</option>
+            <option>TexPac</option>
+            <option>Mixed</option>
+          </select>
+        </div>
+        <div>
+          <label for="sortedBy">Sorted By</label>
+          <input id="sortedBy" type="text" placeholder="Name" />
+        </div>
+        <div>
+          <label for="lot">Lot Number</label>
+          <input id="lot" type="text" maxlength="6" placeholder="e.g., 105 or 105CS"
+                 inputmode="numeric" pattern="[0-9A-Za-z]*" />
+        </div>
+      </div>
+
+      <div class="row" style="gap:24px">
+        <div style="flex:1">
+          <div class="section-title">Selection</div>
+          <div id="selectionChoices" class="choices">
+            <!-- 19 static selection buttons with inline handlers -->
+            <button type="button" class="chip" onclick="selectSelection(this)" data-weight="Extra Heavy" data-grade="1" data-selection="Extra Heavy 1"><span class="top">Extra Heavy</span><span class="bottom">1</span></button>
+            <button type="button" class="chip" onclick="selectSelection(this)" data-weight="Extra Heavy" data-grade="2" data-selection="Extra Heavy 2"><span class="top">Extra Heavy</span><span class="bottom">2</span></button>
+            <button type="button" class="chip" onclick="selectSelection(this)" data-weight="Extra Heavy" data-grade="3" data-selection="Extra Heavy 3"><span class="top">Extra Heavy</span><span class="bottom">3</span></button>
+            <button type="button" class="chip" onclick="selectSelection(this)" data-weight="Extra Heavy" data-grade="4" data-selection="Extra Heavy 4"><span class="top">Extra Heavy</span><span class="bottom">4</span></button>
+
+            <button type="button" class="chip" onclick="selectSelection(this)" data-weight="Heavy" data-grade="1" data-selection="Heavy 1"><span class="top">Heavy</span><span class="bottom">1</span></button>
+            <button type="button" class="chip" onclick="selectSelection(this)" data-weight="Heavy" data-grade="2" data-selection="Heavy 2"><span class="top">Heavy</span><span class="bottom">2</span></button>
+            <button type="button" class="chip" onclick="selectSelection(this)" data-weight="Heavy" data-grade="3" data-selection="Heavy 3"><span class="top">Heavy</span><span class="bottom">3</span></button>
+            <button type="button" class="chip" onclick="selectSelection(this)" data-weight="Heavy" data-grade="4" data-selection="Heavy 4"><span class="top">Heavy</span><span class="bottom">4</span></button>
+
+            <button type="button" class="chip" onclick="selectSelection(this)" data-weight="Med" data-grade="1" data-selection="Med 1"><span class="top">Med</span><span class="bottom">1</span></button>
+            <button type="button" class="chip" onclick="selectSelection(this)" data-weight="Med" data-grade="2" data-selection="Med 2"><span class="top">Med</span><span class="bottom">2</span></button>
+            <button type="button" class="chip" onclick="selectSelection(this)" data-weight="Med" data-grade="3" data-selection="Med 3"><span class="top">Med</span><span class="bottom">3</span></button>
+            <button type="button" class="chip" onclick="selectSelection(this)" data-weight="Med" data-grade="4" data-selection="Med 4"><span class="top">Med</span><span class="bottom">4</span></button>
+
+            <button type="button" class="chip" onclick="selectSelection(this)" data-weight="Light" data-grade="1" data-selection="Light 1"><span class="top">Light</span><span class="bottom">1</span></button>
+            <button type="button" class="chip" onclick="selectSelection(this)" data-weight="Light" data-grade="2" data-selection="Light 2"><span class="top">Light</span><span class="bottom">2</span></button>
+            <button type="button" class="chip" onclick="selectSelection(this)" data-weight="Light" data-grade="3" data-selection="Light 3"><span class="top">Light</span><span class="bottom">3</span></button>
+            <button type="button" class="chip" onclick="selectSelection(this)" data-weight="Light" data-grade="4" data-selection="Light 4"><span class="top">Light</span><span class="bottom">4</span></button>
+
+            <button type="button" class="chip single" onclick="selectSelection(this)" data-weight="Mose Heavy" data-grade="" data-selection="Mose Heavy">Mose Heavy</button>
+            <button type="button" class="chip single" onclick="selectSelection(this)" data-weight="Mose Medium" data-grade="" data-selection="Mose Medium">Mose Medium</button>
+            <button type="button" class="chip single" onclick="selectSelection(this)" data-weight="3X" data-grade="" data-selection="3X">3X</button>
+          </div>
+          <div class="hint" style="margin-top:6px">Select one selection to enable Submit.</div>
+        </div>
+
+        <div style="flex:1">
+          <div class="section-title">Reason (optional)</div>
+          <div id="reasonChoices" class="choices smallCols">
+            <!-- Alphabetical reasons, includes 4 new ones -->
+            <button type="button" class="chip single" onclick="toggleReason(this)" data-value="Abraded Grain">Abraded Grain</button>
+            <button type="button" class="chip single" onclick="toggleReason(this)" data-value="Butcher Cut">Butcher Cut</button>
+            <button type="button" class="chip single" onclick="toggleReason(this)" data-value="Fat Wrinkle">Fat Wrinkle</button>
+            <button type="button" class="chip single" onclick="toggleReason(this)" data-value="Folds">Folds</button>
+            <button type="button" class="chip single" onclick="toggleReason(this)" data-value="Heavy Draw">Heavy Draw</button>
+            <button type="button" class="chip single" onclick="toggleReason(this)" data-value="Insect Damage">Insect Damage</button>
+            <button type="button" class="chip single" onclick="toggleReason(this)" data-value="Kidney Grease">Kidney Grease</button>
+            <button type="button" class="chip single" onclick="toggleReason(this)" data-value="Machine Damage">Machine Damage</button>
+            <button type="button" class="chip single" onclick="toggleReason(this)" data-value="Manure/Urine">Manure/Urine</button>
+            <button type="button" class="chip single" onclick="toggleReason(this)" data-value="Puller Damage">Puller Damage</button>
+            <button type="button" class="chip single" onclick="toggleReason(this)" data-value="Purple Stain">Purple Stain</button>
+            <button type="button" class="chip single" onclick="toggleReason(this)" data-value="Scud">Scud</button>
+            <button type="button" class="chip single" onclick="toggleReason(this)" data-value="Scuff">Scuff</button>
+            <button type="button" class="chip single" onclick="toggleReason(this)" data-value="White Streak">White Streak</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:16px">
+        <button id="submitBtn" class="btn">Submit</button>
+        <button id="undoBtn" class="btn secondary" title="Remove most recent entry">Undo last</button>
+        <button id="clearBtn" class="btn danger" title="Delete ALL entries">Delete all</button>
+      </div>
+      <p class="hint" style="margin-top:8px">Submit keeps Packer & Lot for faster repeat logging; clears Selection and Reason.</p>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <h2 style="margin-top:0">Log</h2>
+      <div style="overflow:auto">
+        <table id="table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Packer</th>
+              <th>Sorted By</th>
+              <th>Lot Number</th>
+              <th>Selection</th>
+              <th>Reason</th>
+              <th>Timestamp</th>
+              <th>Weight</th>
+              <th>Grade</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
   </div>
-  <div style="display:flex;gap:24px;flex-wrap:wrap">
-    <div style="flex:1;min-width:280px">
-      <div>Selection</div>
-      <div id="selectionChoices" class="choices"></div>
-    </div>
-    <div style="flex:1;min-width:280px">
-      <div>Reason (optional)</div>
-      <div id="reasonChoices" class="choices smallCols"></div>
-    </div>
-  </div>
-  <div style="margin-top:12px">
-    <button id="submitBtn" class="btn">Submit</button>
-    <button id="undoBtn" class="btn">Undo last</button>
-    <button id="clearBtn" class="btn">Delete all</button>
-    <button id="exportBtn" class="btn">Export CSV</button>
-  </div>
-  <div style="overflow:auto;margin-top:12px">
-    <table id="table" style="width:100%;border-collapse:collapse">
-      <thead><tr><th>#</th><th>Packer</th><th>Sorted By</th><th>Lot</th><th>Selection</th><th>Reason</th><th>Timestamp</th><th>Weight</th><th>Grade</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</div>
-<script>
-function selectSelection(btn){ document.querySelectorAll('#selectionChoices .chip').forEach(b=>b.classList.remove('sel-selected')); btn.classList.add('sel-selected'); }
-function toggleReason(btn){ let on = btn.classList.contains('reason-selected'); document.querySelectorAll('#reasonChoices .chip').forEach(b=>b.classList.remove('reason-selected')); if(!on) btn.classList.add('reason-selected'); }
-(function(){
-  const LS='skirtingSortingLog_v7';
-  const selectionDefs=[['Extra Heavy','1'],['Extra Heavy','2'],['Extra Heavy','3'],['Extra Heavy','4'],['Heavy','1'],['Heavy','2'],['Heavy','3'],['Heavy','4'],['Med','1'],['Med','2'],['Med','3'],['Med','4'],['Light','1'],['Light','2'],['Light','3'],['Light','4'],['Mose Heavy',''],['Mose Medium',''],['3X','']];
-  const reasons=['Abraded Grain','Butcher Cut','Fat Wrinkle','Folds','Heavy Draw','Insect Damage','Kidney Grease','Machine Damage','Manure/Urine','Puller Damage','Purple Stain','Scud','Scuff','White Streak'];
-  const sel=document.getElementById('selectionChoices'); selectionDefs.forEach(([w,g])=>{ const b=document.createElement('button'); b.type='button'; b.className='chip'; b.setAttribute('data-weight',w); b.setAttribute('data-grade',g); b.setAttribute('data-selection', g? (w+' '+g): w); b.onclick=function(){selectSelection(b)}; b.innerHTML= g? ('<div>'+w+'</div><div style="font-size:18px">'+g+'</div>') : w; sel.appendChild(b); });
-  const rea=document.getElementById('reasonChoices'); reasons.sort((a,b)=>a.localeCompare(b)).forEach(r=>{ const b=document.createElement('button'); b.type='button'; b.className='chip'; b.setAttribute('data-value',r); b.onclick=function(){toggleReason(b)}; b.textContent=r; rea.appendChild(b); });
-  function read(){ try{return JSON.parse(localStorage.getItem(LS)||'[]')}catch(e){return[]} } function write(d){ localStorage.setItem(LS, JSON.stringify(d)) }
-  function render(){ const data=read(); const tb=document.querySelector('#table tbody'); tb.innerHTML=data.map((row,i)=>`<tr><td>${i+1}</td><td>${row.packer}</td><td>${row.sortedBy}</td><td>${row.lot}</td><td>${row.selection}</td><td>${row.reason}</td><td>${new Date(row.ts).toLocaleString()}</td><td>${row.weight}</td><td>${row.grade}</td></tr>`).join(''); }
-  render();
-  document.getElementById('submitBtn').onclick=function(){ const packer=document.getElementById('packer').value.trim(); const sortedBy=document.getElementById('sortedBy').value.trim(); const lot=document.getElementById('lot').value.trim(); const selBtn=document.querySelector('#selectionChoices .chip.sel-selected'); const reasonEl=document.querySelector('#reasonChoices .chip.reason-selected'); const reason=reasonEl?reasonEl.getAttribute('data-value'):''; if(!packer){alert('Choose a Packer.');return} if(!/^[A-Za-z0-9]{1,6}$/.test(lot)){alert('Lot must be 1–6 letters/numbers.');return} if(!selBtn){alert('Choose one Selection.');return} const entry={ packer, sortedBy, lot, selection: selBtn.getAttribute('data-selection'), reason, ts:new Date().toISOString(), weight: selBtn.getAttribute('data-grade') ? selBtn.getAttribute('data-weight') : selBtn.getAttribute('data-selection'), grade: selBtn.getAttribute('data-grade') || '' }; const data=read(); data.push(entry); write(data); document.querySelectorAll('#selectionChoices .chip').forEach(b=>b.classList.remove('sel-selected')); document.querySelectorAll('#reasonChoices .chip').forEach(b=>b.classList.remove('reason-selected')); render(); }
-  document.getElementById('undoBtn').onclick=function(){ const data=read(); if(!data.length){alert('No entries to undo.');return} if(!confirm('Undo last entry? This will delete the most recent entry.')) return; data.pop(); write(data); render(); }
-  document.getElementById('clearBtn').onclick=function(){ if(confirm('Delete ALL entries? This cannot be undone.')){ write([]); render(); } }
-  document.getElementById('exportBtn').onclick=function(){ const data=read(); const header=['Packer','Sorted By','Lot Number','Selection','Reason','Timestamp','Weight','Grade']; const rows=data.map(r=>[r.packer,r.sortedBy,r.lot,r.selection,r.reason,r.ts,r.weight,r.grade]); const csv=[header].concat(rows).map(cols=>cols.map(v=>{ v = String(v==None and '' or v); return /[",\n]/.test(v)? '"'+v.replace(/"/g,'""')+'"' : v; }).join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='skirting-sorting-log.csv'; a.click(); URL.revokeObjectURL(url); }
-})();</script>
+
+  <script>
+    // Inline handlers for absolute reliability on iPad/desktop
+    function selectSelection(btn){
+      var chips = document.querySelectorAll('#selectionChoices .chip');
+      for (var i=0;i<chips.length;i++){ chips[i].classList.remove('sel-selected'); }
+      btn.classList.add('sel-selected');
+    }
+    function toggleReason(btn){
+      var chips = document.querySelectorAll('#reasonChoices .chip');
+      var wasOn = btn.classList.contains('reason-selected');
+      for (var i=0;i<chips.length;i++){ chips[i].classList.remove('reason-selected'); }
+      if(!wasOn){ btn.classList.add('reason-selected'); }
+    }
+  </script>
+
+  <script>
+  (function(){
+    var LS_KEY = 'skirtingSortingLog_v8';
+
+    function $(sel){ return document.querySelector(sel); }
+    function $all(sel){ return Array.prototype.slice.call(document.querySelectorAll(sel)); }
+
+    var packerEl = $('#packer');
+    var sortedByEl = $('#sortedBy');
+    var lotEl = $('#lot');
+    var tableBody = $('#table tbody');
+
+    var submitBtn = $('#submitBtn');
+    var exportBtn = $('#exportBtn');
+    var clearBtn = $('#clearBtn');
+    var undoBtn = $('#undoBtn');
+
+    function getSelectedSelection(){ return document.querySelector('#selectionChoices .chip.sel-selected'); }
+    function getSelectedReason(){
+      var el = document.querySelector('#reasonChoices .chip.reason-selected');
+      return el ? el.getAttribute('data-value') : '';
+    }
+
+    function readLog(){ try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch(e){ return []; } }
+    function writeLog(data){ try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch(e){} }
+
+    function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',\"'\":'&#39;'}[c]); }); }
+    function fmtDateTime(iso){ try { return new Date(iso).toLocaleString(); } catch(e){ return iso; } }
+
+    function renderTable(){
+      var data = readLog();
+      var rows = data.map(function(row, idx){
+        return '<tr>' +
+          '<td>'+(idx+1)+'</td>' +
+          '<td>'+escapeHtml(row.packer)+'</td>' +
+          '<td>'+escapeHtml(row.sortedBy)+'</td>' +
+          '<td>'+escapeHtml(row.lot)+'</td>' +
+          '<td>'+escapeHtml(row.selection)+'</td>' +
+          '<td>'+escapeHtml(row.reason)+'</td>' +
+          '<td>'+fmtDateTime(row.ts)+'</td>' +
+          '<td>'+escapeHtml(row.weight)+'</td>' +
+          '<td>'+escapeHtml(row.grade)+'</td>' +
+        '</tr>';
+      }).join('');
+      tableBody.innerHTML = rows;
+    }
+    renderTable();
+
+    submitBtn.addEventListener('click', function(){
+      var packer = (packerEl.value || '').trim();
+      var sortedBy = (sortedByEl.value || '').trim();
+      var lot = (lotEl.value || '').trim();
+      var selBtn = getSelectedSelection();
+      var reason = getSelectedReason();
+
+      if(!packer){ alert('Please choose a Packer.'); return; }
+      if(!/^[A-Za-z0-9]{1,6}$/.test(lot)){ alert('Lot Number must be 1–6 letters/numbers (e.g., 105 or 105CS).'); return; }
+      if(!selBtn){ alert('Please choose one Selection.'); return; }
+
+      var weight = selBtn.getAttribute('data-grade') ? selBtn.getAttribute('data-weight') : selBtn.getAttribute('data-selection');
+      var grade = selBtn.getAttribute('data-grade') || '';
+      var selectionText = selBtn.getAttribute('data-selection');
+
+      var entry = {
+        packer: packer,
+        sortedBy: sortedBy,
+        lot: lot,
+        selection: selectionText,
+        reason: reason,
+        ts: new Date().toISOString(),
+        weight: weight,
+        grade: grade
+      };
+
+      var data = readLog(); data.push(entry); writeLog(data);
+
+      // clear selections
+      $all('#selectionChoices .chip').forEach(function(b){ b.classList.remove('sel-selected'); });
+      $all('#reasonChoices .chip').forEach(function(b){ b.classList.remove('reason-selected'); });
+
+      renderTable();
+    });
+
+    undoBtn.addEventListener('click', function(){
+      var data = readLog(); if(!data.length){ alert('No entries to undo.'); return; }
+      if(!confirm('Undo last entry? This will delete the most recent entry.')) return;
+      data.pop(); writeLog(data); renderTable();
+    });
+
+    clearBtn.addEventListener('click', function(){
+      if(confirm('Delete ALL entries? This cannot be undone.')){ writeLog([]); renderTable(); }
+    });
+
+    exportBtn.addEventListener('click', function(){
+      var data = readLog();
+      var header = ['Packer','Sorted By','Lot Number','Selection','Reason','Timestamp','Weight','Grade'];
+      var rows = data.map(function(r){ return [r.packer, r.sortedBy, r.lot, r.selection, r.reason, r.ts, r.weight, r.grade]; });
+      var csv = [header].concat(rows).map(function(cols){
+        return cols.map(function(v){
+          var s = String(v == null ? '' : v);
+          return /[\",\n]/.test(s) ? '\"' + s.replace(/\"/g, '\"\"') + '\"' : s;
+        }).join(',');
+      }).join('\n');
+      var blob = new Blob([csv], {type: 'text/csv'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      var today = new Date().toISOString().slice(0,10);
+      a.href = url; a.download = 'skirting-sorting-log-' + today + '.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    });
+  })();
+  </script>
 
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./service-worker.js?v=7').catch(function(e){ console.log(e); });
+    navigator.serviceWorker.register('./service-worker.js?v=8').catch(function(e){ console.log(e); });
   });
 }
 </script>
-</body></html>
+</body>
+</html>
+
