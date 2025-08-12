@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Skirting Sorting Log — v8</title>
+  <title>Skirting Sorting Log — v9.1 (Submit Fix)</title>
   <style>
     :root {
       --bg: #0f172a; --panel: #111827; --muted: #9ca3af; --text: #e5e7eb;
@@ -25,12 +25,11 @@
     h1 { font-size: clamp(20px, 5vw, 28px); margin:0; letter-spacing:.3px; }
     .card { background: rgba(17,24,39,.75); border: 1px solid rgba(255,255,255,.06); border-radius: var(--radius); box-shadow: var(--shadow); padding: clamp(14px, 3vw, 22px); }
 
-    /* Top inputs — responsive & safe on iPad */
     .grid-3 { display:grid; grid-template-columns: 150px minmax(180px, 1fr) 220px; gap: 16px; }
     .grid-3 > div { min-width: 0; }
     @media (max-width: 900px){
       .grid-3 { grid-template-columns: 1fr 1fr; }
-      .grid-3 > div:nth-child(3){ grid-column: span 2; } /* Lot moves to its own row */
+      .grid-3 > div:nth-child(3){ grid-column: span 2; }
     }
     @media (max-width: 600px){
       .grid-3 { grid-template-columns: 1fr; }
@@ -83,7 +82,7 @@
         <h1>Skirting Sorting Log</h1>
       </div>
       <div class="row">
-        <button id="exportBtn" class="btn secondary" title="Download CSV of all entries">Export CSV</button>
+        <button id="exportBtn" class="btn secondary" title="Download CSV of all entries" onclick="handleExport()">Export CSV</button>
       </div>
     </header>
 
@@ -145,7 +144,6 @@
         <div style="flex:1">
           <div class="section-title">Reason (optional)</div>
           <div id="reasonChoices" class="choices smallCols">
-            <!-- Alphabetical reasons, includes 4 new ones -->
             <button type="button" class="chip single" onclick="toggleReason(this)" data-value="Abraded Grain">Abraded Grain</button>
             <button type="button" class="chip single" onclick="toggleReason(this)" data-value="Butcher Cut">Butcher Cut</button>
             <button type="button" class="chip single" onclick="toggleReason(this)" data-value="Fat Wrinkle">Fat Wrinkle</button>
@@ -165,9 +163,9 @@
       </div>
 
       <div class="row" style="margin-top:16px">
-        <button id="submitBtn" class="btn">Submit</button>
-        <button id="undoBtn" class="btn secondary" title="Remove most recent entry">Undo last</button>
-        <button id="clearBtn" class="btn danger" title="Delete ALL entries">Delete all</button>
+        <button id="submitBtn" class="btn" onclick="handleSubmit()">Submit</button>
+        <button id="undoBtn" class="btn secondary" title="Remove most recent entry" onclick="handleUndo()">Undo last</button>
+        <button id="clearBtn" class="btn danger" title="Delete ALL entries" onclick="handleClear()">Delete all</button>
       </div>
       <p class="hint" style="margin-top:8px">Submit keeps Packer & Lot for faster repeat logging; clears Selection and Reason.</p>
     </section>
@@ -196,7 +194,6 @@
   </div>
 
   <script>
-    // Inline handlers for absolute reliability on iPad/desktop
     function selectSelection(btn){
       var chips = document.querySelectorAll('#selectionChoices .chip');
       for (var i=0;i<chips.length;i++){ chips[i].classList.remove('sel-selected'); }
@@ -212,7 +209,7 @@
 
   <script>
   (function(){
-    var LS_KEY = 'skirtingSortingLog_v8';
+    var LS_KEY = 'skirtingSortingLog_v91';
 
     function $(sel){ return document.querySelector(sel); }
     function $all(sel){ return Array.prototype.slice.call(document.querySelectorAll(sel)); }
@@ -222,48 +219,13 @@
     var lotEl = $('#lot');
     var tableBody = $('#table tbody');
 
-    var submitBtn = $('#submitBtn');
-    var exportBtn = $('#exportBtn');
-    var clearBtn = $('#clearBtn');
-    var undoBtn = $('#undoBtn');
-
-    function getSelectedSelection(){ return document.querySelector('#selectionChoices .chip.sel-selected'); }
-    function getSelectedReason(){
-      var el = document.querySelector('#reasonChoices .chip.reason-selected');
-      return el ? el.getAttribute('data-value') : '';
-    }
-
-    function readLog(){ try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch(e){ return []; } }
-    function writeLog(data){ try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch(e){} }
-
-    function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',\"'\":'&#39;'}[c]); }); }
-    function fmtDateTime(iso){ try { return new Date(iso).toLocaleString(); } catch(e){ return iso; } }
-
-    function renderTable(){
-      var data = readLog();
-      var rows = data.map(function(row, idx){
-        return '<tr>' +
-          '<td>'+(idx+1)+'</td>' +
-          '<td>'+escapeHtml(row.packer)+'</td>' +
-          '<td>'+escapeHtml(row.sortedBy)+'</td>' +
-          '<td>'+escapeHtml(row.lot)+'</td>' +
-          '<td>'+escapeHtml(row.selection)+'</td>' +
-          '<td>'+escapeHtml(row.reason)+'</td>' +
-          '<td>'+fmtDateTime(row.ts)+'</td>' +
-          '<td>'+escapeHtml(row.weight)+'</td>' +
-          '<td>'+escapeHtml(row.grade)+'</td>' +
-        '</tr>';
-      }).join('');
-      tableBody.innerHTML = rows;
-    }
-    renderTable();
-
-    submitBtn.addEventListener('click', function(){
+    window.handleSubmit = function(){
       var packer = (packerEl.value || '').trim();
       var sortedBy = (sortedByEl.value || '').trim();
       var lot = (lotEl.value || '').trim();
-      var selBtn = getSelectedSelection();
-      var reason = getSelectedReason();
+      var selBtn = document.querySelector('#selectionChoices .chip.sel-selected');
+      var reasonEl = document.querySelector('#reasonChoices .chip.reason-selected');
+      var reason = reasonEl ? reasonEl.getAttribute('data-value') : '';
 
       if(!packer){ alert('Please choose a Packer.'); return; }
       if(!/^[A-Za-z0-9]{1,6}$/.test(lot)){ alert('Lot Number must be 1–6 letters/numbers (e.g., 105 or 105CS).'); return; }
@@ -286,24 +248,23 @@
 
       var data = readLog(); data.push(entry); writeLog(data);
 
-      // clear selections
       $all('#selectionChoices .chip').forEach(function(b){ b.classList.remove('sel-selected'); });
       $all('#reasonChoices .chip').forEach(function(b){ b.classList.remove('reason-selected'); });
 
       renderTable();
-    });
+    };
 
-    undoBtn.addEventListener('click', function(){
+    window.handleUndo = function(){
       var data = readLog(); if(!data.length){ alert('No entries to undo.'); return; }
       if(!confirm('Undo last entry? This will delete the most recent entry.')) return;
       data.pop(); writeLog(data); renderTable();
-    });
+    };
 
-    clearBtn.addEventListener('click', function(){
+    window.handleClear = function(){
       if(confirm('Delete ALL entries? This cannot be undone.')){ writeLog([]); renderTable(); }
-    });
+    };
 
-    exportBtn.addEventListener('click', function(){
+    window.handleExport = function(){
       var data = readLog();
       var header = ['Packer','Sorted By','Lot Number','Selection','Reason','Timestamp','Weight','Grade'];
       var rows = data.map(function(r){ return [r.packer, r.sortedBy, r.lot, r.selection, r.reason, r.ts, r.weight, r.grade]; });
@@ -320,14 +281,43 @@
       a.href = url; a.download = 'skirting-sorting-log-' + today + '.csv';
       document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(url);
-    });
+    };
+
+    function readLog(){ try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch(e){ return []; } }
+    function writeLog(data){ try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch(e){} }
+
+    function escapeHtml(s){
+      var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+      return String(s).replace(/[&<>"']/g, function(ch){ return map[ch]; });
+    }
+    function fmtDateTime(iso){ try { return new Date(iso).toLocaleString(); } catch(e){ return iso; } }
+
+    function renderTable(){
+      var data = readLog();
+      var rows = data.map(function(row, idx){
+        return '<tr>' +
+          '<td>'+(idx+1)+'</td>' +
+          '<td>'+escapeHtml(row.packer)+'</td>' +
+          '<td>'+escapeHtml(row.sortedBy)+'</td>' +
+          '<td>'+escapeHtml(row.lot)+'</td>' +
+          '<td>'+escapeHtml(row.selection)+'</td>' +
+          '<td>'+escapeHtml(row.reason)+'</td>' +
+          '<td>'+fmtDateTime(row.ts)+'</td>' +
+          '<td>'+escapeHtml(row.weight)+'</td>' +
+          '<td>'+escapeHtml(row.grade)+'</td>' +
+        '</tr>';
+      }).join('');
+      tableBody.innerHTML = rows;
+    }
+
+    renderTable();
   })();
   </script>
 
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./service-worker.js?v=8').catch(function(e){ console.log(e); });
+    navigator.serviceWorker.register('./service-worker.js?v=9').catch(function(e){ console.log(e); });
   });
 }
 </script>
