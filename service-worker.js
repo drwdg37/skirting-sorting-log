@@ -1,5 +1,5 @@
-// Cache-busting version v3
-const CACHE_NAME = 'skirting-log-v3';
+// Cache version v5
+const CACHE_NAME = 'skirting-log-v5';
 const OFFLINE_ASSETS = [
   './',
   './index.html',

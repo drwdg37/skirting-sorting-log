@@ -1,14 +1,11 @@
-Skirting Sorting Log — PWA (v3)
+Skirting Sorting Log — PWA (v5)
 
-Deploy to GitHub Pages (HTTPS):
-1) Create a public repo, e.g., skirting-sorting-log.
-2) Upload these files to the repo root and commit.
-3) Settings → Pages → Deploy from a branch: main / (root). Save.
-4) After a minute, visit https://<your-user>.github.io/<repo>/
+Changes in v5:
+- Restored the dark polished styling from earlier versions.
+- Reason buttons now look like Selection buttons and turn red when selected.
+- Keeps v4 functionality: Sorted By column, 6-char Lot Number, undo confirmation, CSV export, offline support.
 
-Install (iPad Safari):
-- Share → Add to Home Screen → Open from the icon. Works offline.
-
-Updating:
-- Change CACHE_NAME in service-worker.js (e.g., v4) and re-upload.
-- Optional: Update the "v3" footer in index.html so you can see which build is live.
+Deploy (GitHub Pages):
+1) Upload these files to your repo root and commit.
+2) Settings → Pages → Deploy from a branch: main / (root). Save.
+3) Open https://<your-user>.github.io/<repo>/?v=5 and Add to Home Screen.
