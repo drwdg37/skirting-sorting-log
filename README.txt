@@ -1,15 +1,12 @@
-Skirting Sorting Log — PWA v6
+Skirting Sorting Log — PWA v7
 
-- Uses inline onclick handlers for reliable taps/clicks on iPad
-- Responsive filter layout + number-favoring keyboard for Lot Number
-- Offline-ready via service worker cache
-- index.html is the main entry
+- Layout fix for top inputs
+- Inline onClick chips
+- Extra reasons added & alphabetized
+- Offline via service worker
 
-Deploy (GitHub Pages):
-1) Create a repo and upload these files at the root.
-2) In Settings → Pages: Deploy from branch (main / root). Save.
-3) Visit https://<your-user>.github.io/<repo>/?v=6
-4) In Safari: Share → Add to Home Screen.
-
-Updating:
-- When you push changes, bump the query string (?v=7) once to refresh the cache.
+Deploy on GitHub Pages:
+1) Upload files to repo root.
+2) Enable Pages (Deploy from branch).
+3) Open: https://<your-user>.github.io/<repo>/?v=7
+4) iPad Safari → Share → Add to Home Screen.
