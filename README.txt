@@ -1,8 +1,14 @@
-# Skirting Sorting Log PWA
+Skirting Sorting Log — PWA (v3)
 
-1. Upload all files to a web server with HTTPS (e.g., GitHub Pages).
-2. Visit the site in Safari on iPad.
-3. Tap Share -> Add to Home Screen.
-4. From then on, it works offline.
+Deploy to GitHub Pages (HTTPS):
+1) Create a public repo, e.g., skirting-sorting-log.
+2) Upload these files to the repo root and commit.
+3) Settings → Pages → Deploy from a branch: main / (root). Save.
+4) After a minute, visit https://<your-user>.github.io/<repo>/
 
-To update, change `CACHE_NAME` in service-worker.js to a new version string.
+Install (iPad Safari):
+- Share → Add to Home Screen → Open from the icon. Works offline.
+
+Updating:
+- Change CACHE_NAME in service-worker.js (e.g., v4) and re-upload.
+- Optional: Update the "v3" footer in index.html so you can see which build is live.
