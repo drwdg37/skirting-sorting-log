@@ -1,6 +1,6 @@
-// Cache version v5
-const CACHE_NAME = 'skirting-log-v5';
-const OFFLINE_ASSETS = [
+// Cache version v6
+const CACHE = 'skirting-log-v6';
+const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
@@ -9,21 +9,19 @@ const OFFLINE_ASSETS = [
   './icons/apple-touch-icon.png'
 ];
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(OFFLINE_ASSETS))
-  );
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
+self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.map(k => (k !== CACHE_NAME) && caches.delete(k))))
+    caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE && caches.delete(k))))
   );
   self.clients.claim();
 });
 
-self.addEventListener('fetch', (event) => {
+self.addEventListener('fetch', event => {
   const req = event.request;
   event.respondWith(
     caches.match(req).then(cached => {
@@ -32,15 +30,13 @@ self.addEventListener('fetch', (event) => {
         try {
           const url = new URL(req.url);
           if (req.method === 'GET' && url.origin === self.location.origin) {
-            caches.open(CACHE_NAME).then(cache => cache.put(req, res.clone()));
+            caches.open(CACHE).then(cache => cache.put(req, res.clone()));
           }
-        } catch (e) {}
+        } catch(e){}
         return res;
       }).catch(() => {
-        if (req.mode === 'navigate') {
-          return caches.match('./index.html');
-        }
-      });
+        if (req.mode === 'navigate') return caches.match('./index.html');
+      })
     })
   );
 });
