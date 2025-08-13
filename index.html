@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Skirting Sorting Log — v10.5a (Pointer Events)</title>
+  <title>Skirting Sorting Log — v10.6 (Pointer Events)</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -74,6 +74,7 @@
             <option>Tyson</option>
             <option>TexPac</option>
             <option>Mixed</option>
+              <option>Card Missing</option>
           </select>
         </div>
         <div>
@@ -109,6 +110,7 @@
             <button type="button" class="chip single" onpointerup="selectSelection(this, event)" data-weight="Mose Heavy" data-grade="" data-selection="Mose Heavy">Mose Heavy</button>
             <button type="button" class="chip single" onpointerup="selectSelection(this, event)" data-weight="Mose Medium" data-grade="" data-selection="Mose Medium">Mose Medium</button>
             <button type="button" class="chip single" onpointerup="selectSelection(this, event)" data-weight="3X" data-grade="" data-selection="3X">3X</button>
+            <button type="button" class="chip single" onpointerup="selectSelection(this, event)" data-weight="" data-grade="Clean Flesh" data-selection="Clean Flesh">Clean Flesh</button>
           </div>
           <div class="hint" style="margin-top:6px">Select one selection to enable Submit.</div>
         </div>
@@ -117,14 +119,14 @@
           <div class="section-title">Reason (optional)</div>
           <div id="reasonChoices" class="choices smallCols">
             <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Abraded Grain">Abraded Grain</button>
+            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Branded">Branded</button>
             <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Butcher Cut">Butcher Cut</button>
+            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Draw">Draw</button>
             <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Fat Wrinkle">Fat Wrinkle</button>
             <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Folds">Folds</button>
-            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Heavy Draw">Heavy Draw</button>
-            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Insect Damage">Insect Damage</button>
-            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Kidney Grease">Kidney Grease</button>
+            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Insects/Warts">Insects/Warts</button>
             <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Machine Damage">Machine Damage</button>
-            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Manure/Urine">Manure/Urine</button>
+            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Manure/Urine/Kidney">Manure/Urine/Kidney</button>
             <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Puller Damage">Puller Damage</button>
             <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Purple Stain">Purple Stain</button>
             <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Scud">Scud</button>
@@ -274,7 +276,7 @@
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./service-worker.js?v=10.5a').catch(function(e){ console.log(e); });
+    navigator.serviceWorker.register('./service-worker.js?v=10.6').catch(function(e){ console.log(e); });
   });
 }
 </script>
