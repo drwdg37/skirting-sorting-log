@@ -1,9 +1,9 @@
 {
   "name": "Skirting Sorting Log",
   "short_name": "Skirting Log",
-  "start_url": "./index.html?v=10.2",
+  "start_url": "./index.html?v=10.3",
   "display": "standalone",
-  "background_color": "#0f172a",
+  "background_color": "#ffffff",
   "theme_color": "#0f172a",
   "icons": [
     {
