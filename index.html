@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Skirting Sorting Log — v10.2</title>
+  <title>Skirting Sorting Log — v10.4 (iPad state fix)</title>
+  <link rel="manifest" href="./manifest.webmanifest">
   <style>
     :root { --bg:#0f172a; --panel:#111827; --muted:#9ca3af; --text:#e5e7eb; --accent:#22d3ee; --accent-2:#a78bfa; --danger:#ef4444; --shadow:0 10px 30px rgba(0,0,0,.35); --radius:18px; }
     html,body{height:100%}
@@ -82,26 +83,23 @@
         <div style="flex:1">
           <div class="section-title">Selection</div>
           <div id="selectionChoices" class="choices">
+            <!-- selection chips -->
             <button type="button" class="chip" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="Extra Heavy" data-grade="1" data-selection="Extra Heavy 1"><span class="top">Extra Heavy</span><span class="bottom">1</span></button>
             <button type="button" class="chip" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="Extra Heavy" data-grade="2" data-selection="Extra Heavy 2"><span class="top">Extra Heavy</span><span class="bottom">2</span></button>
             <button type="button" class="chip" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="Extra Heavy" data-grade="3" data-selection="Extra Heavy 3"><span class="top">Extra Heavy</span><span class="bottom">3</span></button>
             <button type="button" class="chip" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="Extra Heavy" data-grade="4" data-selection="Extra Heavy 4"><span class="top">Extra Heavy</span><span class="bottom">4</span></button>
-
             <button type="button" class="chip" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="Heavy" data-grade="1" data-selection="Heavy 1"><span class="top">Heavy</span><span class="bottom">1</span></button>
             <button type="button" class="chip" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="Heavy" data-grade="2" data-selection="Heavy 2"><span class="top">Heavy</span><span class="bottom">2</span></button>
             <button type="button" class="chip" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="Heavy" data-grade="3" data-selection="Heavy 3"><span class="top">Heavy</span><span class="bottom">3</span></button>
             <button type="button" class="chip" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="Heavy" data-grade="4" data-selection="Heavy 4"><span class="top">Heavy</span><span class="bottom">4</span></button>
-
             <button type="button" class="chip" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="Med" data-grade="1" data-selection="Med 1"><span class="top">Med</span><span class="bottom">1</span></button>
             <button type="button" class="chip" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="Med" data-grade="2" data-selection="Med 2"><span class="top">Med</span><span class="bottom">2</span></button>
             <button type="button" class="chip" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="Med" data-grade="3" data-selection="Med 3"><span class="top">Med</span><span class="bottom">3</span></button>
             <button type="button" class="chip" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="Med" data-grade="4" data-selection="Med 4"><span class="top">Med</span><span class="bottom">4</span></button>
-
             <button type="button" class="chip" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="Light" data-grade="1" data-selection="Light 1"><span class="top">Light</span><span class="bottom">1</span></button>
             <button type="button" class="chip" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="Light" data-grade="2" data-selection="Light 2"><span class="top">Light</span><span class="bottom">2</span></button>
             <button type="button" class="chip" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="Light" data-grade="3" data-selection="Light 3"><span class="top">Light</span><span class="bottom">3</span></button>
             <button type="button" class="chip" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="Light" data-grade="4" data-selection="Light 4"><span class="top">Light</span><span class="bottom">4</span></button>
-
             <button type="button" class="chip single" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="Mose Heavy" data-grade="" data-selection="Mose Heavy">Mose Heavy</button>
             <button type="button" class="chip single" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="Mose Medium" data-grade="" data-selection="Mose Medium">Mose Medium</button>
             <button type="button" class="chip single" onclick="selectSelection(this)" ontouchstart="selectSelection(this)" data-weight="3X" data-grade="" data-selection="3X">3X</button>
@@ -152,27 +150,44 @@
   <div class="diag" id="diag">ready</div>
 
   <script>
+    // Global state for iPad PWA reliability
+    window._sel = null;      // {selection, weight, grade}
+    window._reason = '';     // string
+
+    function setDiag(msg){ var d=document.getElementById('diag'); if(d) d.textContent=msg; }
+
     function selectSelection(btn){
       var chips = document.querySelectorAll('#selectionChoices .chip');
       for (var i=0;i<chips.length;i++){ chips[i].classList.remove('sel-selected'); }
       btn.classList.add('sel-selected');
-      document.getElementById('diag').textContent = 'selection set';
+      // Write state directly from dataset
+      window._sel = {
+        selection: btn.getAttribute('data-selection'),
+        weight: btn.getAttribute('data-grade') ? btn.getAttribute('data-weight') : btn.getAttribute('data-selection'),
+        grade: btn.getAttribute('data-grade') || ''
+      };
+      setDiag('sel: ' + window._sel.selection);
     }
     function toggleReason(btn){
       var chips = document.querySelectorAll('#reasonChoices .chip');
       var wasOn = btn.classList.contains('reason-selected');
       for (var i=0;i<chips.length;i++){ chips[i].classList.remove('reason-selected'); }
-      if(!wasOn){ btn.classList.add('reason-selected'); }
-      document.getElementById('diag').textContent = wasOn ? 'reason cleared' : 'reason set';
+      if(!wasOn){
+        btn.classList.add('reason-selected');
+        window._reason = btn.getAttribute('data-value') || '';
+      } else {
+        window._reason = '';
+      }
+      setDiag(window._reason ? ('reason: ' + window._reason) : 'reason: none');
     }
   </script>
 
   <script>
   (function(){
-    var LS_KEY = 'skirtingSortingLog_v102';
+    var LS_KEY = 'skirtingSortingLog_v104';
     function $(sel){ return document.querySelector(sel); }
     function $all(sel){ return Array.prototype.slice.call(document.querySelectorAll(sel)); }
-    var packerEl=$('#packer'), sortedByEl=$('#sortedBy'), lotEl=$('#lot'), tableBody=$('#table tbody'), diag=$('#diag');
+    var packerEl=$('#packer'), sortedByEl=$('#sortedBy'), lotEl=$('#lot'), tableBody=$('#table tbody');
 
     function escapeHtml(s){
       var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -190,37 +205,43 @@
     renderTable();
 
     window.handleSubmit = function(){
-      diag.textContent = 'submit tapped';
       var packer = (packerEl.value||'').trim();
       var sortedBy = (sortedByEl.value||'').trim();
       var lot = (lotEl.value||'').trim();
-      var selBtn = document.querySelector('#selectionChoices .chip.sel-selected');
-      var reasonEl = document.querySelector('#reasonChoices .chip.reason-selected');
-      var reason = reasonEl ? reasonEl.getAttribute('data-value') : '';
 
-      if(!packer){ alert('Please choose a Packer.'); diag.textContent='packer missing'; return; }
-      if(!/^[A-Za-z0-9]{1,6}$/.test(lot)){ alert('Lot Number must be 1–6 letters/numbers (e.g., 105 or 105CS).'); diag.textContent='lot invalid'; return; }
-      if(!selBtn){ alert('Please choose one Selection.'); diag.textContent='selection missing'; return; }
+      if(!packer){ alert('Please choose a Packer.'); return; }
+      if(!/^[A-Za-z0-9]{1,6}$/.test(lot)){ alert('Lot Number must be 1–6 letters/numbers (e.g., 105 or 105CS).'); return; }
+      if(!window._sel){ alert('Please choose one Selection.'); return; }
 
-      var weight = selBtn.getAttribute('data-grade') ? selBtn.getAttribute('data-weight') : selBtn.getAttribute('data-selection');
-      var grade = selBtn.getAttribute('data-grade') || '';
-      var selectionText = selBtn.getAttribute('data-selection');
+      var entry = {
+        packer: packer,
+        sortedBy: sortedBy,
+        lot: lot,
+        selection: window._sel.selection,
+        reason: window._reason || '',
+        ts: new Date().toISOString(),
+        weight: window._sel.weight,
+        grade: window._sel.grade
+      };
 
-      var entry = { packer: packer, sortedBy: sortedBy, lot: lot, selection: selectionText, reason: reason, ts: new Date().toISOString(), weight: weight, grade: grade };
       var data = readLog(); data.push(entry); writeLog(data);
+
+      // Reset highlights + state
       $all('#selectionChoices .chip').forEach(function(b){ b.classList.remove('sel-selected'); });
       $all('#reasonChoices .chip').forEach(function(b){ b.classList.remove('reason-selected'); });
+      window._sel = null; window._reason = '';
+
       renderTable();
-      diag.textContent = 'logged';
+      setDiag('logged');
     };
 
     window.handleUndo = function(){
-      var data = readLog(); if(!data.length){ alert('No entries to undo.'); diag.textContent='undo: none'; return; }
+      var data = readLog(); if(!data.length){ alert('No entries to undo.'); return; }
       if(!confirm('Undo last entry? This will delete the most recent entry.')) return;
-      data.pop(); writeLog(data); renderTable(); diag.textContent='undone';
+      data.pop(); writeLog(data); renderTable(); setDiag('undone');
     };
     window.handleClear = function(){
-      if(confirm('Delete ALL entries? This cannot be undone.')){ writeLog([]); renderTable(); diag.textContent='cleared'; }
+      if(confirm('Delete ALL entries? This cannot be undone.')){ writeLog([]); renderTable(); setDiag('cleared'); }
     };
     window.handleExport = function(){
       var data = readLog();
@@ -235,7 +256,7 @@
       var blob = new Blob([csv], {type:'text/csv'});
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a'); a.href=url; a.download='skirting-sorting-log-'+new Date().toISOString().slice(0,10)+'.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-      diag.textContent='csv saved';
+      setDiag('csv saved');
     };
   })();
   </script>
@@ -243,7 +264,7 @@
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./service-worker.js?v=10.2').catch(function(e){ console.log(e); });
+    navigator.serviceWorker.register('./service-worker.js?v=10.4').catch(function(e){ console.log(e); });
   });
 }
 </script>
