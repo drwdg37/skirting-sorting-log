@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Skirting Sorting Log — v10.6 (Pointer Events)</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png">
+
+  <style>
+    :root { --bg:#0f172a; --panel:#111827; --muted:#9ca3af; --text:#e5e7eb; --accent:#22d3ee; --accent-2:#a78bfa; --danger:#ef4444; --shadow:0 10px 30px rgba(0,0,0,.35); --radius:18px; }
+    html,body{height:100%}
+    *{-webkit-tap-highlight-color:transparent; box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#0b1220,#0f172a 40%);color:var(--text);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+    .wrap{max-width:1100px;margin:0 auto;padding:clamp(16px,3vw,28px)}
+    header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{width:40px;height:40px;border-radius:10px;background:#ffffff;box-shadow:var(--shadow);object-fit:contain;padding:4px;display:block}
+    h1{font-size:clamp(20px,5vw,28px);margin:0;letter-spacing:.3px}
+    .card{background:rgba(17,24,39,.75);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);box-shadow:var(--shadow);padding:clamp(14px,3vw,22px)}
+    .grid-3{display:grid;grid-template-columns:150px minmax(180px,1fr) 220px;gap:16px}
+    .grid-3>div{min-width:0}
+    @media (max-width:900px){.grid-3{grid-template-columns:1fr 1fr}.grid-3>div:nth-child(3){grid-column:span 2}}
+    @media (max-width:600px){.grid-3{grid-template-columns:1fr}.grid-3>div:nth-child(3){grid-column:auto}}
+    label{display:block;font-weight:600;color:#cbd5e1;margin-bottom:6px}
+    input[type="text"],select{width:100%;padding:14px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#0b1020;color:var(--text);outline:none}
+    input::placeholder{color:#64748b}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .btn{appearance:none;border:0;padding:12px 16px;border-radius:12px;font-weight:700;letter-spacing:.3px;color:#0b1020;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:var(--shadow);cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+    .btn.secondary{background:#0b1020;color:var(--text);border:1px solid rgba(255,255,255,.12)}
+    .btn.danger{background:linear-gradient(135deg,#f87171,var(--danger));color:#0b1020}
+    .btn:active{transform:translateY(1px)}
+    .section-title{font-weight:800;letter-spacing:.6px;margin:2px 0 10px;text-transform:uppercase;font-size:14px;color:#cbd5e1}
+    .choices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .choices.smallCols{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .chip{user-select:none;-webkit-user-select:none;padding:16px 10px;border-radius:14px;border:2px solid rgba(255,255,255,.25);background:#0b1020;color:#e5e7eb;cursor:pointer;font-weight:800;text-align:center;box-shadow:var(--shadow);line-height:1.1;touch-action:manipulation}
+    .chip .top{display:block;font-size:14px;opacity:.9}
+    .chip .bottom{display:block;font-size:18px;margin-top:2px;opacity:.95}
+    .chip.single{padding:16px;font-size:16px}
+    .chip.sel-selected{background:linear-gradient(135deg,rgba(34,211,238,.18),rgba(167,139,250,.18));border-color:rgba(34,211,238,.8)}
+    .chip.reason-selected{background:linear-gradient(135deg,rgba(239,68,68,.22),rgba(239,68,68,.10));border-color:rgba(239,68,68,.85)}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;font-size:15px}
+    th{color:#cbd5e1;font-weight:700}
+    tbody tr:hover{background:rgba(255,255,255,.03)}
+    .hint{color:var(--muted);font-size:13px}
+    .diag{position:fixed;bottom:8px;right:8px;background:#111827;color:#e5e7eb;border:1px solid rgba(255,255,255,.1);padding:6px 10px;border-radius:10px;font-size:12px;opacity:.8}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <img class="logo" src="./icons/apple-touch-icon.png" alt="App icon" />
+        <h1>Skirting Sorting Log</h1>
+      </div>
+      <div class="row">
+        <button class="btn secondary" title="Download CSV of all entries" onpointerup="handleExport()">Export CSV</button>
+      </div>
+    </header>
+
+    <section class="card">
+      <div class="grid-3" style="margin-bottom:12px">
+        <div>
+          <label for="packer">Packer</label>
+          <select id="packer">
+            <option value="" hidden>Select</option>
+            <option>PHA</option>
+            <option>Tyson</option>
+            <option>TexPac</option>
+            <option>Mixed</option>
+              <option>Card Missing</option>
+          </select>
+        </div>
+        <div>
+          <label for="sortedBy">Sorted By</label>
+          <input id="sortedBy" type="text" placeholder="Name" />
+        </div>
+        <div>
+          <label for="lot">Lot Number</label>
+          <input id="lot" type="text" maxlength="6" placeholder="e.g., 105 or 105CS" inputmode="numeric" pattern="[0-9A-Za-z]*" />
+        </div>
+      </div>
+
+      <div class="row" style="gap:24px">
+        <div style="flex:1">
+          <div class="section-title">Selection</div>
+          <div id="selectionChoices" class="choices">
+            <button type="button" class="chip" onpointerup="selectSelection(this, event)" data-weight="Extra Heavy" data-grade="1" data-selection="Extra Heavy 1"><span class="top">Extra Heavy</span><span class="bottom">1</span></button>
+            <button type="button" class="chip" onpointerup="selectSelection(this, event)" data-weight="Extra Heavy" data-grade="2" data-selection="Extra Heavy 2"><span class="top">Extra Heavy</span><span class="bottom">2</span></button>
+            <button type="button" class="chip" onpointerup="selectSelection(this, event)" data-weight="Extra Heavy" data-grade="3" data-selection="Extra Heavy 3"><span class="top">Extra Heavy</span><span class="bottom">3</span></button>
+            <button type="button" class="chip" onpointerup="selectSelection(this, event)" data-weight="Extra Heavy" data-grade="4" data-selection="Extra Heavy 4"><span class="top">Extra Heavy</span><span class="bottom">4</span></button>
+            <button type="button" class="chip" onpointerup="selectSelection(this, event)" data-weight="Heavy" data-grade="1" data-selection="Heavy 1"><span class="top">Heavy</span><span class="bottom">1</span></button>
+            <button type="button" class="chip" onpointerup="selectSelection(this, event)" data-weight="Heavy" data-grade="2" data-selection="Heavy 2"><span class="top">Heavy</span><span class="bottom">2</span></button>
+            <button type="button" class="chip" onpointerup="selectSelection(this, event)" data-weight="Heavy" data-grade="3" data-selection="Heavy 3"><span class="top">Heavy</span><span class="bottom">3</span></button>
+            <button type="button" class="chip" onpointerup="selectSelection(this, event)" data-weight="Heavy" data-grade="4" data-selection="Heavy 4"><span class="top">Heavy</span><span class="bottom">4</span></button>
+            <button type="button" class="chip" onpointerup="selectSelection(this, event)" data-weight="Med" data-grade="1" data-selection="Med 1"><span class="top">Med</span><span class="bottom">1</span></button>
+            <button type="button" class="chip" onpointerup="selectSelection(this, event)" data-weight="Med" data-grade="2" data-selection="Med 2"><span class="top">Med</span><span class="bottom">2</span></button>
+            <button type="button" class="chip" onpointerup="selectSelection(this, event)" data-weight="Med" data-grade="3" data-selection="Med 3"><span class="top">Med</span><span class="bottom">3</span></button>
+            <button type="button" class="chip" onpointerup="selectSelection(this, event)" data-weight="Med" data-grade="4" data-selection="Med 4"><span class="top">Med</span><span class="bottom">4</span></button>
+            <button type="button" class="chip" onpointerup="selectSelection(this, event)" data-weight="Light" data-grade="1" data-selection="Light 1"><span class="top">Light</span><span class="bottom">1</span></button>
+            <button type="button" class="chip" onpointerup="selectSelection(this, event)" data-weight="Light" data-grade="2" data-selection="Light 2"><span class="top">Light</span><span class="bottom">2</span></button>
+            <button type="button" class="chip" onpointerup="selectSelection(this, event)" data-weight="Light" data-grade="3" data-selection="Light 3"><span class="top">Light</span><span class="bottom">3</span></button>
+            <button type="button" class="chip" onpointerup="selectSelection(this, event)" data-weight="Light" data-grade="4" data-selection="Light 4"><span class="top">Light</span><span class="bottom">4</span></button>
+            <button type="button" class="chip single" onpointerup="selectSelection(this, event)" data-weight="Mose Heavy" data-grade="" data-selection="Mose Heavy">Mose Heavy</button>
+            <button type="button" class="chip single" onpointerup="selectSelection(this, event)" data-weight="Mose Medium" data-grade="" data-selection="Mose Medium">Mose Medium</button>
+            <button type="button" class="chip single" onpointerup="selectSelection(this, event)" data-weight="3X" data-grade="" data-selection="3X">3X</button>
+            <button type="button" class="chip single" onpointerup="selectSelection(this, event)" data-weight="" data-grade="Clean Flesh" data-selection="Clean Flesh">Clean Flesh</button>
+          </div>
+          <div class="hint" style="margin-top:6px">Select one selection to enable Submit.</div>
+        </div>
+
+        <div style="flex:1">
+          <div class="section-title">Reasons (optional, max 3)</div>
+          <div id="reasonChoices" class="choices smallCols">
+            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Abraded Grain">Abraded Grain</button>
+            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Branded">Branded</button>
+            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Butcher Cut">Butcher Cut</button>
+            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Draw">Draw</button>
+            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Fat Wrinkle">Fat Wrinkle</button>
+            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Folds">Folds</button>
+            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Insects/Warts">Insects/Warts</button>
+            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Machine Damage">Machine Damage</button>
+            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Manure/Urine/Kidney">Manure/Urine/Kidney</button>
+            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Puller Damage">Puller Damage</button>
+            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Purple Stain">Purple Stain</button>
+            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Scud">Scud</button>
+            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Scuff">Scuff</button>
+            <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="White Streak">White Streak</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:16px">
+        <button type="button" class="btn" onpointerup="handleSubmit()">Submit</button>
+        <button type="button" class="btn secondary" title="Remove most recent entry" onpointerup="handleUndo()">Undo last</button>
+        <button type="button" class="btn danger" title="Delete ALL entries" onpointerup="handleClear()">Delete all</button>
+      </div>
+      <p class="hint" style="margin-top:8px">Submit keeps Packer & Lot for faster repeat logging; clears Selection and Reason.</p>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <h2 style="margin-top:0">Log</h2>
+      <div style="overflow:auto">
+        <table id="table">
+          <thead><tr><th>#</th><th>Packer</th><th>Sorted By</th><th>Lot Number</th><th>Selection</th><th>Reason 1</th><th>Reason 2</th><th>Reason 3</th><th>Timestamp</th><th>Weight</th><th>Grade</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="diag" id="diag">ready</div>
+
+  <script>
+    // Global state for iPad PWA reliability
+    window._sel = null;      // {selection, weight, grade}
+    window._reason = [];     // array of strings (max 3)
+    function setDiag(msg){ var d=document.getElementById('diag'); if(d) d.textContent=msg; }
+
+    function selectSelection(btn, ev){
+      if(ev) ev.preventDefault();
+      var chips = document.querySelectorAll('#selectionChoices .chip');
+      for (var i=0;i<chips.length;i++){ chips[i].classList.remove('sel-selected'); }
+      btn.classList.add('sel-selected');
+      window._sel = {
+        selection: btn.getAttribute('data-selection'),
+        weight: btn.getAttribute('data-grade') ? btn.getAttribute('data-weight') : btn.getAttribute('data-selection'),
+        grade: btn.getAttribute('data-grade') || ''
+      };
+      setDiag('sel: ' + window._sel.selection);
+    }
+    function toggleReason(btn, ev){
+      if(ev) ev.preventDefault();
+      var reasonValue = btn.getAttribute('data-value') || '';
+      var wasOn = btn.classList.contains('reason-selected');
+      
+      if(wasOn){
+        // Remove from selection
+        btn.classList.remove('reason-selected');
+        window._reason = window._reason.filter(function(r) { return r !== reasonValue; });
+      } else {
+        // Add to selection (check limit)
+        if(window._reason.length >= 3){
+          showErrorModal('You can only select up to 3 reasons. Please deselect one of the currently selected reasons first.');
+          return;
+        }
+        btn.classList.add('reason-selected');
+        window._reason.push(reasonValue);
+      }
+      
+      setDiag(window._reason.length > 0 ? ('reasons: ' + window._reason.join(', ')) : 'reasons: none');
+    }
+    
+    function showErrorModal(message){
+      // Create modal if it doesn't exist
+      var modal = document.getElementById('errorModal');
+      if(!modal){
+        modal = document.createElement('div');
+        modal.id = 'errorModal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:1000;';
+        modal.innerHTML = '<div style="background:var(--panel);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);padding:24px;max-width:400px;margin:16px;box-shadow:var(--shadow);"><h3 style="margin:0 0 16px;color:var(--danger);">Error</h3><p style="margin:0 0 20px;color:var(--text);">' + message + '</p><button onclick="this.parentElement.parentElement.remove()" class="btn" style="width:100%;">OK</button></div>';
+        document.body.appendChild(modal);
+      } else {
+        modal.querySelector('p').textContent = message;
+        modal.style.display = 'flex';
+      }
+    }
+  </script>
+
+  <script>
+  (function(){
+    var LS_KEY = 'skirtingSortingLog_v105';
+    function $(sel){ return document.querySelector(sel); }
+    function $all(sel){ return Array.prototype.slice.call(document.querySelectorAll(sel)); }
+    var packerEl=$('#packer'), sortedByEl=$('#sortedBy'), lotEl=$('#lot'), tableBody=$('#table tbody');
+
+    function escapeHtml(s){
+      var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+      return String(s).replace(/[&<>"']/g, function(ch){ return map[ch]; });
+    }
+    function fmtDateTime(iso){ 
+      try { 
+        var date = new Date(iso);
+        // Format as YYYY-MM-DD HH:MM:SS for Excel compatibility
+        var year = date.getFullYear();
+        var month = String(date.getMonth() + 1).padStart(2, '0');
+        var day = String(date.getDate()).padStart(2, '0');
+        var hours = String(date.getHours()).padStart(2, '0');
+        var minutes = String(date.getMinutes()).padStart(2, '0');
+        var seconds = String(date.getSeconds()).padStart(2, '0');
+        return year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds;
+      } catch(e){ 
+        return iso; 
+      } 
+    }
+    function readLog(){ try{return JSON.parse(localStorage.getItem(LS_KEY)||'[]')}catch(e){return[]} }
+    function writeLog(d){ try{ localStorage.setItem(LS_KEY, JSON.stringify(d)); }catch(e){} }
+    function renderTable(){
+      var data = readLog();
+      tableBody.innerHTML = data.map(function(r,i){
+        // Handle both old format (string) and new format (array) for backward compatibility
+        var reasons = Array.isArray(r.reason) ? r.reason : (r.reason ? [r.reason] : []);
+        var reason1 = reasons[0] || '';
+        var reason2 = reasons[1] || '';
+        var reason3 = reasons[2] || '';
+        return '<tr><td>'+(i+1)+'</td><td>'+escapeHtml(r.packer)+'</td><td>'+escapeHtml(r.sortedBy)+'</td><td>'+escapeHtml(r.lot)+'</td><td>'+escapeHtml(r.selection)+'</td><td>'+escapeHtml(reason1)+'</td><td>'+escapeHtml(reason2)+'</td><td>'+escapeHtml(reason3)+'</td><td>'+fmtDateTime(r.ts)+'</td><td>'+escapeHtml(r.weight)+'</td><td>'+escapeHtml(r.grade)+'</td></tr>';
+      }).join('');
+    }
+    renderTable();
+
+    window.handleSubmit = function(ev){
+      if(ev) ev.preventDefault();
+      var packer = (packerEl.value||'').trim();
+      var sortedBy = (sortedByEl.value||'').trim();
+      var lot = (lotEl.value||'').trim();
+
+      if(!packer){ alert('Please choose a Packer.'); return; }
+      if(!/^[A-Za-z0-9]{1,6}$/.test(lot)){ alert('Lot Number must be 1–6 letters/numbers (e.g., 105 or 105CS).'); return; }
+      if(!window._sel){ alert('Please choose one Selection.'); return; }
+
+      var entry = {
+        packer: packer,
+        sortedBy: sortedBy,
+        lot: lot,
+        selection: window._sel.selection,
+        reason: window._reason || [],
+        ts: new Date().toISOString(),
+        weight: window._sel.weight,
+        grade: window._sel.grade
+      };
+
+      var data = readLog(); data.push(entry); writeLog(data);
+
+      // Reset highlights + state
+      $all('#selectionChoices .chip').forEach(function(b){ b.classList.remove('sel-selected'); });
+      $all('#reasonChoices .chip').forEach(function(b){ b.classList.remove('reason-selected'); });
+      window._sel = null; window._reason = [];
+
+      renderTable();
+      setDiag('logged');
+    };
+
+    window.handleUndo = function(ev){
+      if(ev) ev.preventDefault();
+      var data = readLog(); if(!data.length){ alert('No entries to undo.'); return; }
+      if(!confirm('Undo last entry? This will delete the most recent entry.')) return;
+      data.pop(); writeLog(data); renderTable(); setDiag('undone');
+    };
+    window.handleClear = function(ev){
+      if(ev) ev.preventDefault();
+      if(confirm('Delete ALL entries? This cannot be undone.')){ writeLog([]); renderTable(); setDiag('cleared'); }
+    };
+    window.handleExport = function(ev){
+      if(ev) ev.preventDefault();
+      var data = readLog();
+      var header = ['Packer','Sorted By','Lot Number','Selection','Reason 1','Reason 2','Reason 3','Timestamp','Weight','Grade'];
+      var rows = data.map(function(r){
+        // Handle both old format (string) and new format (array) for backward compatibility
+        var reasons = Array.isArray(r.reason) ? r.reason : (r.reason ? [r.reason] : []);
+        return [r.packer,r.sortedBy,r.lot,r.selection,reasons[0] || '',reasons[1] || '',reasons[2] || '',fmtDateTime(r.ts),r.weight,r.grade];
+      });
+      var csv = [header].concat(rows).map(function(cols){
+        return cols.map(function(v){
+          var s = String(v == null ? '' : v);
+          return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+        }).join(',');
+      }).join('\n');
+      var blob = new Blob([csv], {type:'text/csv'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href=url; a.download='skirting-sorting-log-'+new Date().toISOString().slice(0,10)+'.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      setDiag('csv saved');
+    };
+  })();
+  </script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('./service-worker.js?v=10.6').catch(function(e){ console.log(e); });
+  });
+}
+</script>
+</body>
+</html>
+
