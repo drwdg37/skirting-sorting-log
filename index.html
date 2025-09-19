@@ -116,7 +116,7 @@
         </div>
 
         <div style="flex:1">
-          <div class="section-title">Reason (optional)</div>
+          <div class="section-title">Reasons (optional, max 3)</div>
           <div id="reasonChoices" class="choices smallCols">
             <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Abraded Grain">Abraded Grain</button>
             <button type="button" class="chip single" onpointerup="toggleReason(this, event)" data-value="Branded">Branded</button>
@@ -141,13 +141,14 @@
         <button type="button" class="btn secondary" title="Remove most recent entry" onpointerup="handleUndo()">Undo last</button>
         <button type="button" class="btn danger" title="Delete ALL entries" onpointerup="handleClear()">Delete all</button>
       </div>
+      <p class="hint" style="margin-top:8px">Submit keeps Packer & Lot for faster repeat logging; clears Selection and Reason.</p>
     </section>
 
     <section class="card" style="margin-top:16px">
       <h2 style="margin-top:0">Log</h2>
       <div style="overflow:auto">
         <table id="table">
-          <thead><tr><th>#</th><th>Packer</th><th>Sorted By</th><th>Lot Number</th><th>Selection</th><th>Reason</th><th>Timestamp</th><th>Weight</th><th>Grade</th></tr></thead>
+          <thead><tr><th>#</th><th>Packer</th><th>Sorted By</th><th>Lot Number</th><th>Selection</th><th>Reason 1</th><th>Reason 2</th><th>Reason 3</th><th>Timestamp</th><th>Weight</th><th>Grade</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -159,7 +160,7 @@
   <script>
     // Global state for iPad PWA reliability
     window._sel = null;      // {selection, weight, grade}
-    window._reason = '';     // string
+    window._reason = [];     // array of strings (max 3)
     function setDiag(msg){ var d=document.getElementById('diag'); if(d) d.textContent=msg; }
 
     function selectSelection(btn, ev){
@@ -176,16 +177,39 @@
     }
     function toggleReason(btn, ev){
       if(ev) ev.preventDefault();
-      var chips = document.querySelectorAll('#reasonChoices .chip');
+      var reasonValue = btn.getAttribute('data-value') || '';
       var wasOn = btn.classList.contains('reason-selected');
-      for (var i=0;i<chips.length;i++){ chips[i].classList.remove('reason-selected'); }
-      if(!wasOn){
-        btn.classList.add('reason-selected');
-        window._reason = btn.getAttribute('data-value') || '';
+      
+      if(wasOn){
+        // Remove from selection
+        btn.classList.remove('reason-selected');
+        window._reason = window._reason.filter(function(r) { return r !== reasonValue; });
       } else {
-        window._reason = '';
+        // Add to selection (check limit)
+        if(window._reason.length >= 3){
+          showErrorModal('You can only select up to 3 reasons. Please deselect one of the currently selected reasons first.');
+          return;
+        }
+        btn.classList.add('reason-selected');
+        window._reason.push(reasonValue);
       }
-      setDiag(window._reason ? ('reason: ' + window._reason) : 'reason: none');
+      
+      setDiag(window._reason.length > 0 ? ('reasons: ' + window._reason.join(', ')) : 'reasons: none');
+    }
+    
+    function showErrorModal(message){
+      // Create modal if it doesn't exist
+      var modal = document.getElementById('errorModal');
+      if(!modal){
+        modal = document.createElement('div');
+        modal.id = 'errorModal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:1000;';
+        modal.innerHTML = '<div style="background:var(--panel);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);padding:24px;max-width:400px;margin:16px;box-shadow:var(--shadow);"><h3 style="margin:0 0 16px;color:var(--danger);">Error</h3><p style="margin:0 0 20px;color:var(--text);">' + message + '</p><button onclick="this.parentElement.parentElement.remove()" class="btn" style="width:100%;">OK</button></div>';
+        document.body.appendChild(modal);
+      } else {
+        modal.querySelector('p').textContent = message;
+        modal.style.display = 'flex';
+      }
     }
   </script>
 
@@ -200,13 +224,32 @@
       var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
       return String(s).replace(/[&<>"']/g, function(ch){ return map[ch]; });
     }
-    function fmtDateTime(iso){ try { return new Date(iso).toLocaleString(); } catch(e){ return iso; } }
+    function fmtDateTime(iso){ 
+      try { 
+        var date = new Date(iso);
+        // Format as YYYY-MM-DD HH:MM:SS for Excel compatibility
+        var year = date.getFullYear();
+        var month = String(date.getMonth() + 1).padStart(2, '0');
+        var day = String(date.getDate()).padStart(2, '0');
+        var hours = String(date.getHours()).padStart(2, '0');
+        var minutes = String(date.getMinutes()).padStart(2, '0');
+        var seconds = String(date.getSeconds()).padStart(2, '0');
+        return year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds;
+      } catch(e){ 
+        return iso; 
+      } 
+    }
     function readLog(){ try{return JSON.parse(localStorage.getItem(LS_KEY)||'[]')}catch(e){return[]} }
     function writeLog(d){ try{ localStorage.setItem(LS_KEY, JSON.stringify(d)); }catch(e){} }
     function renderTable(){
       var data = readLog();
       tableBody.innerHTML = data.map(function(r,i){
-        return '<tr><td>'+(i+1)+'</td><td>'+escapeHtml(r.packer)+'</td><td>'+escapeHtml(r.sortedBy)+'</td><td>'+escapeHtml(r.lot)+'</td><td>'+escapeHtml(r.selection)+'</td><td>'+escapeHtml(r.reason)+'</td><td>'+fmtDateTime(r.ts)+'</td><td>'+escapeHtml(r.weight)+'</td><td>'+escapeHtml(r.grade)+'</td></tr>';
+        // Handle both old format (string) and new format (array) for backward compatibility
+        var reasons = Array.isArray(r.reason) ? r.reason : (r.reason ? [r.reason] : []);
+        var reason1 = reasons[0] || '';
+        var reason2 = reasons[1] || '';
+        var reason3 = reasons[2] || '';
+        return '<tr><td>'+(i+1)+'</td><td>'+escapeHtml(r.packer)+'</td><td>'+escapeHtml(r.sortedBy)+'</td><td>'+escapeHtml(r.lot)+'</td><td>'+escapeHtml(r.selection)+'</td><td>'+escapeHtml(reason1)+'</td><td>'+escapeHtml(reason2)+'</td><td>'+escapeHtml(reason3)+'</td><td>'+fmtDateTime(r.ts)+'</td><td>'+escapeHtml(r.weight)+'</td><td>'+escapeHtml(r.grade)+'</td></tr>';
       }).join('');
     }
     renderTable();
@@ -226,7 +269,7 @@
         sortedBy: sortedBy,
         lot: lot,
         selection: window._sel.selection,
-        reason: window._reason || '',
+        reason: window._reason || [],
         ts: new Date().toISOString(),
         weight: window._sel.weight,
         grade: window._sel.grade
@@ -237,7 +280,7 @@
       // Reset highlights + state
       $all('#selectionChoices .chip').forEach(function(b){ b.classList.remove('sel-selected'); });
       $all('#reasonChoices .chip').forEach(function(b){ b.classList.remove('reason-selected'); });
-      window._sel = null; window._reason = '';
+      window._sel = null; window._reason = [];
 
       renderTable();
       setDiag('logged');
@@ -256,8 +299,12 @@
     window.handleExport = function(ev){
       if(ev) ev.preventDefault();
       var data = readLog();
-      var header = ['Packer','Sorted By','Lot Number','Selection','Reason','Timestamp','Weight','Grade'];
-      var rows = data.map(function(r){ return [r.packer,r.sortedBy,r.lot,r.selection,r.reason,r.ts,r.weight,r.grade]; });
+      var header = ['Packer','Sorted By','Lot Number','Selection','Reason 1','Reason 2','Reason 3','Timestamp','Weight','Grade'];
+      var rows = data.map(function(r){
+        // Handle both old format (string) and new format (array) for backward compatibility
+        var reasons = Array.isArray(r.reason) ? r.reason : (r.reason ? [r.reason] : []);
+        return [r.packer,r.sortedBy,r.lot,r.selection,reasons[0] || '',reasons[1] || '',reasons[2] || '',fmtDateTime(r.ts),r.weight,r.grade];
+      });
       var csv = [header].concat(rows).map(function(cols){
         return cols.map(function(v){
           var s = String(v == null ? '' : v);
