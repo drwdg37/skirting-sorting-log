@@ -3,7 +3,8 @@
   "short_name": "Skirting Log",
   "start_url": "./index.html?v=10.6",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "icons": [
     {
